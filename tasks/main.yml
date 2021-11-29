@@ -51,3 +51,9 @@
         post-up ip -6 route replace {{ route }} via fe80::1 dev v{{ switcheroo_if }}
         {% endfor %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ switcheroo_ip6_inner }}/128 via fe80::2 dev vens3
+        {% for route in switcheroo_down_routes %}
+        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route }} via 192.168.158.2
+        {% endfor %}
+        {% for route in switcheroo_down_routes6 %}
+        post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ route }} via fe80::2 dev vens3
+        {% endfor %}

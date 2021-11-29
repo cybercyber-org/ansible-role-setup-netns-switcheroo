@@ -11,3 +11,4 @@ Parameters:
 * `switcheroo_up_routes`: A list of routes to add to the `switcheroo_if` (`{"target": "default", "router": "1.2.3.4"}`)
 * `switcheroo_up_routes6`: A list of routes to add to the `switcheroo_if` (`{"target": "default", "router": "2100::"}`)
 * `switcheroo_pfd`: A list of port/protocol that the namespace should forward to the root-namespace (e.g. `[{ "proto": "tcp", "port": "22"}]`
+* `switcheroo_down_routes`, `switcheroo_down_routes6`: list of prefixes that should be routed "down" from the namespace to the root namespace
