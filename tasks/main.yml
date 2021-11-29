@@ -10,7 +10,7 @@
       auto {{ switcheroo_if }}
       iface {{ switcheroo_if }} inet manual
         pre-up ip netns add {{ switcheroo_if }} && ip link set {{ switcheroo_if }} netns {{ switcheroo_if }}
-        up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
+        up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr replace {{ switcheroo_ip6 }}/{{ switcheroo_mask6 }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
         down ip netns del {{ switcheroo_if }}
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o {{ switcheroo_if }} -j MASQUERADE
