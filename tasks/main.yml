@@ -1,0 +1,37 @@
+---
+- name: install iptables
+  package:
+    name: iptables
+- name: "configure {{ switcheroo_if }}"
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} {{ switcheroo_if | upper }} CONFIG"
+    block: |
+      auto {{ switcheroo_if }}
+      iface {{ switcheroo_if }} inet manual
+        pre-up ip netns add {{ switcheroo_if }} && ip link set {{ switcheroo_if }} netns {{ switcheroo_if }}
+        up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
+        down ip netns del {{ switcheroo_if }}
+        post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o {{ switcheroo_if }} -j MASQUERADE
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o v{{ switcheroo_if }} -s 192.168.158.2 -j MASQUERADE
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 500 -j DNAT --to-destination 192.168.158.2
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 4500 -j DNAT --to-destination 192.168.158.2
+        {% for pfwd in switcheroo_pfwd %}
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination 192.168.158.2
+        {% endfor %}
+- name: "configure veth to {{ switcheroo_if }}"
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} VETH {{ switcheroo_if | upper }} CONFIG"
+    block: |
+      auto v{{ switcheroo_if }}
+      iface v{{ switcheroo_if }} inet static
+        pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if}} netns eth1
+        pre-up ip netns exec eth1 ip addr add 192.168.158.1/24 dev v{{ switcheroo_if }} && ip netns exec eth1 ip link set up dev v{{ switcheroo_if }}
+        address 192.168.158.2
+        netmask 255.255.255.0
+        {% for route in switcheroo_routes %}
+        post-up ip route replace {{ route }} via 192.168.158.1
+        {% endfor %}
+        post-down ip link del v{{ switcheroo_if }}
