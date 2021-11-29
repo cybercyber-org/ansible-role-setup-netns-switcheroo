@@ -23,6 +23,12 @@
         {% for pfwd in switcheroo_pfwd %}
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination 192.168.158.2
         {% endfor %}
+        {% for route in switcheroo_up_routes %}
+        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route.target }} via {{ route.router }}
+        {% endfor %}
+        {% for route in switcheroo_up_routes6 %}
+        post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ route.target }} via {{ route.router }}
+        {% endfor %}
 - name: "configure veth to {{ switcheroo_if }}"
   blockinfile:
     path: /etc/network/interfaces
@@ -30,8 +36,8 @@
     block: |
       auto v{{ switcheroo_if }}
       iface v{{ switcheroo_if }} inet static
-        pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if}} netns eth1
-        pre-up ip netns exec eth1 ip addr add 192.168.158.1/24 dev v{{ switcheroo_if }} && ip netns exec eth1 ip link set up dev v{{ switcheroo_if }}
+        pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if}} netns {{ switcheroo_if }}
+        pre-up ip netns exec {{ switcheroo_if }} ip addr add 192.168.158.1/24 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr add fe80::1 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev v{{ switcheroo_if }}
         address 192.168.158.2
         netmask 255.255.255.0
         {% for route in switcheroo_routes %}
