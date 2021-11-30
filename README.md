@@ -1,3 +1,5 @@
+See https://cybercyber.org/using-a-network-namespace-as-nat-router-for-a-vps.html for a description of what this is doing.
+
 Parameters:
 
 * `switcheroo_if`: Which interface to move into a namespace
