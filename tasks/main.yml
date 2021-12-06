@@ -36,7 +36,7 @@
     block: |
       auto v{{ switcheroo_if }}
       iface v{{ switcheroo_if }} inet static
-        pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if}} netns {{ switcheroo_if }}
+        pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if }} netns {{ switcheroo_if }}
         pre-up ip netns exec {{ switcheroo_if }} ip addr add 192.168.158.1/24 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr add fe80::1 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev v{{ switcheroo_if }}
         address 192.168.158.2
         netmask 255.255.255.0

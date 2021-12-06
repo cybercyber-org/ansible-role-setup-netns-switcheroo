@@ -1,4 +1,6 @@
-See https://cybercyber.org/using-a-network-namespace-as-nat-router-for-a-vps.html for a description of what this is doing.
+This role moves the primary interface (passed in as `switcheroo_if`) into a network namespace of the same name. It then sets up routing and port forwarding from that namespace into the root namespace.
+
+See https://cybercyber.org/using-a-network-namespace-as-nat-router-for-a-vps.html for details.
 
 Parameters:
 
