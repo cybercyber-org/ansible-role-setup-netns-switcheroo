@@ -2,6 +2,8 @@ This role moves the primary interface (passed in as `switcheroo_if`) into a netw
 
 See https://cybercyber.org/using-a-network-namespace-as-nat-router-for-a-vps.html for details.
 
+Install using `ansible-galaxy install cybercyber_org.setup_netns_switcheroo`.
+
 Parameters:
 
 * `switcheroo_if`: Which interface to move into a namespace
