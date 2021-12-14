@@ -21,7 +21,7 @@
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 500 -j DNAT --to-destination 192.168.158.2
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 4500 -j DNAT --to-destination 192.168.158.2
         {% for pfwd in switcheroo_pfwd %}
-        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination 192.168.158.2
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination 192.168.158.2:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
         {% endfor %}
         {% for route in switcheroo_up_routes %}
         post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route.target }} via {{ route.router }}
