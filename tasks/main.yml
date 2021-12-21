@@ -12,16 +12,16 @@
         pre-up ip netns add {{ switcheroo_if }} && ip link set {{ switcheroo_if }} netns {{ switcheroo_if }}
         up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr replace {{ switcheroo_ip6 }}/{{ switcheroo_mask6 }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
         down ip netns del {{ switcheroo_if }}
+        # store a link to the netns in /tmp to use e.g. for NetworkNamespacePath in systemd units
+        post-up ip netns exec {{ switcheroo_if }} bash -c 'ln -sfv $(readlink /proc/$$/ns/net) /tmp/netns.{{ switcheroo_if }}'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv6/conf/all/forwarding'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv6/conf/all/proxy_ndp'
         post-up ip netns exec {{ switcheroo_if }} ip -6 neigh add proxy {{ switcheroo_ip6_inner }} dev {{ switcheroo_if }}
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o {{ switcheroo_if }} -j MASQUERADE
-        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o v{{ switcheroo_if }} -s 192.168.158.2 -j MASQUERADE
-        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 500 -j DNAT --to-destination 192.168.158.2
-        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -i {{ switcheroo_if }} -p udp --dport 4500 -j DNAT --to-destination 192.168.158.2
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o v{{ switcheroo_if }} -s {{ switcheroo_ip_inner }} -j MASQUERADE
         {% for pfwd in switcheroo_pfwd %}
-        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination 192.168.158.2:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
+        post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination {{ switcheroo_ip_inner }}:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
         {% endfor %}
         {% for pfwd in switcheroo_pfwd6 %}
         post-up ip netns exec {{ switcheroo_if }} ip6tables -t nat -A PREROUTING -d {{ switcheroo_ip6_inner }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination [{{ switcheroo_ip6_inner }}]:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
@@ -40,11 +40,10 @@
       auto v{{ switcheroo_if }}
       iface v{{ switcheroo_if }} inet static
         pre-up ip link add v{{ switcheroo_if }} type veth peer v{{ switcheroo_if }} netns {{ switcheroo_if }}
-        pre-up ip netns exec {{ switcheroo_if }} ip addr add 192.168.158.1/24 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr add fe80::1 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev v{{ switcheroo_if }}
-        address 192.168.158.2
-        netmask 255.255.255.0
+        pre-up ip netns exec {{ switcheroo_if }} ip addr add {{ switcheroo_ip_inner_router }}/{{ switcheroo_mask_inner }} dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr add fe80::1 dev v{{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev v{{ switcheroo_if }}
+        address {{ switcheroo_ip_inner }}/{{ switcheroo_mask_inner }}
         {% for route in switcheroo_routes %}
-        post-up ip route replace {{ route }} via 192.168.158.1
+        post-up ip route replace {{ route }} via {{ switcheroo_ip_inner_router }}
         {% endfor %}
         post-down ip link del v{{ switcheroo_if }}
       iface v{{ switcheroo_if }} inet6 static
@@ -55,7 +54,7 @@
         {% endfor %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ switcheroo_ip6_inner }}/128 via fe80::2 dev vens3
         {% for route in switcheroo_down_routes %}
-        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route }} via 192.168.158.2
+        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route }} via {{ switcheroo_ip_inner }}
         {% endfor %}
         {% for route in switcheroo_down_routes6 %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ route }} via fe80::2 dev vens3

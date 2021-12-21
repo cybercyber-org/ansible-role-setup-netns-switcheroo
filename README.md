@@ -12,6 +12,9 @@ Parameters:
 * `switcheroo_ip6`: Which IP6 to give the interface (most likely the one it has now + 1?)
 * `switcheroo_ip6_inner`: Which IP6 to give the inner interface (most likely the one `switcheroo_if`  had?)
 * `switcheroo_mask6`: Which prefix length to give the interface (most likely the one it has now?)
+* `switcheroo_ip_inner`: The ip to give to the default namespace (optional)
+* `switcheroo_ip_inner_router`: The ip to give to the router namespace (optional)
+* `switcheroo_mask_inner`: The ip mask for the interface between default namespace and router namespace
 * `switcheroo_routes`: A list of routes that the root-ns should route into the namespace (e.g. `["default", "192.168.1.2/21"]`)
 * `switcheroo_routes6`: A list of ipv6 routes that the root-ns should route into the namespace (e.g. `["default"]`)
 * `switcheroo_up_routes`: A list of routes to add to the `switcheroo_if` (`{"target": "default", "router": "1.2.3.4"}`)
