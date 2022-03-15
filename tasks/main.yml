@@ -10,27 +10,31 @@
       auto {{ switcheroo_if }}
       iface {{ switcheroo_if }} inet manual
         pre-up ip netns add {{ switcheroo_if }} && ip link set {{ switcheroo_if }} netns {{ switcheroo_if }}
-        up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip -6 addr replace {{ switcheroo_ip6 }}/{{ switcheroo_mask6 }} dev {{ switcheroo_if }} && ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
+        up ip netns exec {{ switcheroo_if }} ip addr replace {{ switcheroo_ip }}/{{ switcheroo_mask }} dev {{ switcheroo_if }} && {% if switcheroo_do_ip6 %} ip netns exec {{ switcheroo_if }} ip -6 addr replace {{ switcheroo_ip6 }}/{{ switcheroo_mask6 }} dev {{ switcheroo_if }} && {% endif %} ip netns exec {{ switcheroo_if }} ip link set up dev {{ switcheroo_if }}
         down ip netns del {{ switcheroo_if }}
         # store a link to the netns in /tmp to use e.g. for NetworkNamespacePath in systemd units
         post-up ip netns exec {{ switcheroo_if }} bash -c 'ln -sfv $(readlink /proc/$$/ns/net) /tmp/netns.{{ switcheroo_if }}'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv6/conf/all/forwarding'
         post-up ip netns exec {{ switcheroo_if }} bash -c 'echo 1 > /proc/sys/net/ipv6/conf/all/proxy_ndp'
+        {% if switcheroo_do_ip6 %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 neigh add proxy {{ switcheroo_ip6_inner }} dev {{ switcheroo_if }}
+        {% endif %}
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o {{ switcheroo_if }} -j MASQUERADE
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A POSTROUTING -o v{{ switcheroo_if }} -s {{ switcheroo_ip_inner }} -j MASQUERADE
         {% for pfwd in switcheroo_pfwd %}
         post-up ip netns exec {{ switcheroo_if }} iptables -t nat -A PREROUTING -d {{ switcheroo_ip }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination {{ switcheroo_ip_inner }}:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
         {% endfor %}
+        {% if switcheroo_do_ip6 %}
         {% for pfwd in switcheroo_pfwd6 %}
         post-up ip netns exec {{ switcheroo_if }} ip6tables -t nat -A PREROUTING -d {{ switcheroo_ip6_inner }} -p {{ pfwd.proto }} --dport {{ pfwd.port }} -j DNAT --to-destination [{{ switcheroo_ip6_inner }}]:{{ pfwd.target_port if 'target_port' in pfwd else pfwd.port }}
         {% endfor %}
-        {% for route in switcheroo_up_routes %}
-        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route.target }} via {{ route.router }}
-        {% endfor %}
         {% for route in switcheroo_up_routes6 %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ route.target }} via {{ route.router }}
+        {% endfor %}
+        {% endif %}
+        {% for route in switcheroo_up_routes %}
+        post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route.target }} via {{ route.router }}
         {% endfor %}
 - name: "configure veth to {{ switcheroo_if }}"
   blockinfile:
@@ -46,6 +50,7 @@
         post-up ip route replace {{ route }} via {{ switcheroo_ip_inner_router }}
         {% endfor %}
         post-down ip link del v{{ switcheroo_if }}
+      {% if switcheroo_do_ip6 %}
       iface v{{ switcheroo_if }} inet6 static
         address {{ switcheroo_ip6_inner }}/{{ switcheroo_mask6 }}
         post-up ip -6 addr add fe80::2 dev v{{ switcheroo_if }}
@@ -59,3 +64,4 @@
         {% for route in switcheroo_down_routes6 %}
         post-up ip netns exec {{ switcheroo_if }} ip -6 route replace {{ route }} via fe80::2 dev vens3
         {% endfor %}
+      {% endif %}

@@ -1,3 +1,4 @@
 switcheroo_ip_inner: 192.168.158.2
 switcheroo_ip_inner_router: 192.168.158.1
 switcheroo_mask_inner: 24
+switcheroo_do_ip6: true
