@@ -1,4 +1,17 @@
 ---
+- name: fix fupdown on ubuntu
+  file:
+    dest: /etc/systemd/system/ifup@.service.d
+    state: directory
+  when: ansible_distribution == 'Ubuntu'
+- name: fix fupdown on ubuntu
+  copy:
+    dest: /etc/systemd/system/ifup@.service.d/override.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/bin/sh -ec 'ifup --allow=hotplug %I; ifquery --state %I'
+  when: ansible_distribution == 'Ubuntu'
 - name: install iptables
   package:
     name: iptables
