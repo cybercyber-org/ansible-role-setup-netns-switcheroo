@@ -49,6 +49,9 @@
         {% for route in switcheroo_up_routes %}
         post-up ip netns exec {{ switcheroo_if }} ip route replace {{ route.target }} via {{ route.router }}
         {% endfor %}
+        {% for cmd in switcheroo_extra_cmds %}
+        post-up ip netns exec {{ switcheroo_if }} {{ cmd }}
+        {% endfor %}
 - name: "configure veth to {{ switcheroo_if }}"
   blockinfile:
     path: /etc/network/interfaces

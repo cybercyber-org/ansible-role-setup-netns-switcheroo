@@ -22,3 +22,4 @@ Parameters:
 * `switcheroo_pfwd`: A list of port/protocol that the namespace should forward to the root-namespace (e.g. `[{ "proto": "tcp", "port": "22"}]` and optionally a `target_port`
 * `switcheroo_pfwd6`: A list of port/protocol that the namespace should forward to the root-namespace using ipv6 (e.g. `[{ "proto": "tcp", "port": "22"}]` and optionally a `target_port`
 * `switcheroo_down_routes`, `switcheroo_down_routes6`: list of prefixes that should be routed "down" from the namespace to the root namespace
+* `switcheroo_extra_cmds`: extra commands to be executed on `post-up`; e.g. have `iptables -A` rules in here
